@@ -347,9 +347,12 @@ function parseUrl(raw) {
   let ph = url.match(/pornhub\.com\/view_video\.php\?viewkey=([a-zA-Z0-9]+)/);
   if (ph) return { type:'iframe', src:`https://www.pornhub.com/embed/${ph[1]}`, label:'PornHub' };
 
-  // XVideos
-  let xv = url.match(/xvideos\.com\/video(\d+)\//);
+  // XVideos - link normal
+  let xv = url.match(/xvideos\.com\/video([a-zA-Z0-9]+)[\/\-]/);
   if (xv) return { type:'iframe', src:`https://www.xvideos.com/embedframe/${xv[1]}`, label:'XVideos' };
+  // XVideos - embed direto colado
+  let xve = url.match(/xvideos\.com\/embedframe\/([a-zA-Z0-9]+)/);
+  if (xve) return { type:'iframe', src:`https://www.xvideos.com/embedframe/${xve[1]}`, label:'XVideos' };
 
   // XNXX
   let xn = url.match(/xnxx\.com\/video-([a-zA-Z0-9]+)\//);
