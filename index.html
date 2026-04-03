@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FLOATPLAY</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#080810;
+  --surface:#0f0f1a;
+  --surface2:#16162a;
+  --surface3:#1e1e35;
+  --border:rgba(140,120,255,0.12);
+  --border2:rgba(140,120,255,0.28);
+  --accent:#8c78ff;
+  --accent2:#c4b8ff;
+  --accent3:#5a45d4;
+  --text:#e8e4ff;
+  --muted:#6e6a99;
+  --danger:#ff4a6a;
+  --green:#4affb0;
+  --glow:rgba(140,120,255,0.15);
+}
+
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Share Tech Mono',monospace;
+  height:100vh;
+  overflow:hidden;
+  user-select:none;
+}
+
+/* animated grid background */
+#grid-bg{
+  position:fixed;inset:0;z-index:0;
+  background-image:
+    linear-gradient(rgba(140,120,255,0.03) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(140,120,255,0.03) 1px,transparent 1px);
+  background-size:40px 40px;
+  animation:grid-scroll 20s linear infinite;
+}
+@keyframes grid-scroll{to{background-position:40px 40px}}
+
+#vignette{
+  position:fixed;inset:0;z-index:1;
+  background:radial-gradient(ellipse at center,transparent 40%,rgba(8,8,16,0.85) 100%);
+  pointer-events:none;
+}
+
+/* TOP BAR */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  height:52px;
+  background:rgba(8,8,16,0.92);
+  border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;gap:16px;
+  padding:0 20px;
+  backdrop-filter:blur(12px);
+}
+
+#logo{
+  font-family:'Rajdhani',sans-serif;
+  font-weight:700;font-size:22px;
+  letter-spacing:4px;
+  color:var(--accent2);
+  text-shadow:0 0 20px var(--accent),0 0 40px rgba(140,120,255,0.3);
+  white-space:nowrap;
+  flex-shrink:0;
+}
+#logo span{color:var(--muted);font-weight:300}
+
+#url-form{
+  flex:1;display:flex;gap:8px;align-items:center;
+  max-width:720px;
+}
+
+#url-input{
+  flex:1;
+  background:var(--surface2);
+  border:1px solid var(--border2);
+  color:var(--text);
+  font-family:'Share Tech Mono',monospace;
+  font-size:13px;
+  padding:8px 14px;
+  border-radius:4px;
+  outline:none;
+  transition:border-color 0.2s,box-shadow 0.2s;
+}
+#url-input::placeholder{color:var(--muted)}
+#url-input:focus{
+  border-color:var(--accent);
+  box-shadow:0 0 0 3px rgba(140,120,255,0.12);
+}
+
+#add-btn{
+  background:var(--accent3);
+  border:1px solid var(--accent);
+  color:var(--text);
+  font-family:'Share Tech Mono',monospace;
+  font-size:13px;
+  padding:8px 18px;
+  border-radius:4px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background 0.15s,box-shadow 0.15s,transform 0.1s;
+  letter-spacing:1px;
+}
+#add-btn:hover{background:var(--accent);box-shadow:0 0 16px rgba(140,120,255,0.4)}
+#add-btn:active{transform:scale(0.97)}
+
+#counter{
+  color:var(--muted);font-size:12px;white-space:nowrap;flex-shrink:0;
+  margin-left:auto;
+}
+
+/* WORKSPACE */
+#workspace{
+  position:fixed;
+  top:52px;left:0;right:0;bottom:0;
+  z-index:2;
+  overflow:hidden;
+}
+
+/* EMPTY STATE */
+#empty-state{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;pointer-events:none;
+  transition:opacity 0.3s;
+}
+#empty-state.hidden{opacity:0}
+
+.empty-icon{
+  font-size:48px;opacity:0.12;
+  font-family:'Rajdhani',sans-serif;font-weight:700;
+  letter-spacing:8px;color:var(--accent2);
+}
+.empty-text{color:var(--muted);font-size:13px;letter-spacing:2px;opacity:0.6}
+.empty-hint{color:var(--muted);font-size:11px;opacity:0.35;letter-spacing:1px}
+
+/* FLOATING WINDOW */
+.fwindow{
+  position:absolute;
+  min-width:280px;min-height:200px;
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:6px;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  box-shadow:0 8px 40px rgba(0,0,0,0.6),0 0 0 1px rgba(140,120,255,0.05);
+  transition:box-shadow 0.2s;
+}
+.fwindow.focused{
+  border-color:rgba(140,120,255,0.5);
+  box-shadow:0 12px 60px rgba(0,0,0,0.8),0 0 20px rgba(140,120,255,0.1);
+  z-index:100!important;
+}
+.fwindow.minimized .fwindow-body{display:none}
+.fwindow.minimized{min-height:0}
+
+/* titlebar */
+.fwindow-title{
+  height:34px;flex-shrink:0;
+  background:var(--surface2);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;gap:8px;
+  padding:0 10px;
+  cursor:move;
+}
+.fwindow-icon{
+  width:8px;height:8px;border-radius:50%;
+  background:var(--accent3);flex-shrink:0;
+  box-shadow:0 0 6px var(--accent);
+}
+.fwindow-label{
+  flex:1;font-size:11px;color:var(--muted);
+  letter-spacing:1px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;
+}
+.fwindow-btns{display:flex;gap:4px;flex-shrink:0}
+.fwindow-btn{
+  width:22px;height:22px;border-radius:3px;
+  border:1px solid var(--border2);
+  background:transparent;
+  color:var(--muted);font-size:12px;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:background 0.15s,color 0.15s,border-color 0.15s;
+  font-family:'Share Tech Mono',monospace;
+  line-height:1;
+}
+.fwindow-btn:hover{background:var(--surface3);border-color:var(--accent);color:var(--accent2)}
+.fwindow-btn.close:hover{background:rgba(255,74,106,0.15);border-color:var(--danger);color:var(--danger)}
+
+/* body */
+.fwindow-body{
+  flex:1;position:relative;overflow:hidden;
+  background:#000;
+}
+.fwindow-body iframe,.fwindow-body video{
+  width:100%;height:100%;
+  border:none;display:block;
+}
+
+/* loading state */
+.fwindow-loading{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;background:#000;z-index:10;
+  font-size:12px;color:var(--muted);letter-spacing:2px;
+}
+.fwindow-loading.hidden{display:none}
+.loader{
+  width:32px;height:32px;
+  border:2px solid var(--border2);
+  border-top-color:var(--accent);
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* error state */
+.fwindow-error{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:8px;background:var(--surface);z-index:10;
+  font-size:12px;color:var(--muted);letter-spacing:1px;padding:20px;text-align:center;
+}
+.fwindow-error.hidden{display:none}
+.fwindow-error .err-title{color:var(--danger);font-size:13px;letter-spacing:2px;margin-bottom:4px}
+.fwindow-error .err-hint{font-size:11px;opacity:0.6;line-height:1.6}
+
+/* resize handle */
+.resize-handle{
+  position:absolute;bottom:0;right:0;
+  width:14px;height:14px;cursor:se-resize;
+  z-index:20;
+}
+.resize-handle::after{
+  content:'';position:absolute;bottom:3px;right:3px;
+  width:6px;height:6px;
+  border-right:2px solid var(--accent);
+  border-bottom:2px solid var(--accent);
+  opacity:0.5;
+}
+
+/* toast */
+#toast{
+  position:fixed;bottom:24px;left:50%;transform:translateX(-50%);
+  background:var(--surface2);border:1px solid var(--border2);
+  padding:10px 20px;border-radius:4px;font-size:12px;
+  color:var(--text);letter-spacing:1px;z-index:9999;
+  opacity:0;transition:opacity 0.25s;pointer-events:none;
+  white-space:nowrap;
+}
+#toast.show{opacity:1}
+</style>
+</head>
+<body>
+
+<div id="grid-bg"></div>
+<div id="vignette"></div>
+
+<div id="topbar">
+  <div id="logo">FLOAT<span>PLAY</span></div>
+  <div id="url-form">
+    <input id="url-input" type="text" placeholder="cole o link do vídeo aqui..." autocomplete="off" spellcheck="false">
+    <button id="add-btn" onclick="addPlayer()">+ ABRIR</button>
+  </div>
+  <div id="counter">0 janelas</div>
+</div>
+
+<div id="workspace">
+  <div id="empty-state">
+    <div class="empty-icon">▶ ▶ ▶</div>
+    <div class="empty-text">NENHUM VÍDEO ABERTO</div>
+    <div class="empty-hint">cole um link do youtube, vimeo, xvideos, pornhub ou .mp4 direto</div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+let windowCount = 0;
+let zTop = 10;
+const workspace = document.getElementById('workspace');
+const emptyState = document.getElementById('empty-state');
+const counter = document.getElementById('counter');
+const urlInput = document.getElementById('url-input');
+
+urlInput.addEventListener('keydown', e => { if(e.key === 'Enter') addPlayer(); });
+
+function updateCounter() {
+  const n = document.querySelectorAll('.fwindow').length;
+  counter.textContent = n + (n === 1 ? ' janela' : ' janelas');
+  emptyState.classList.toggle('hidden', n > 0);
+}
+
+function toast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+function parseUrl(raw) {
+  let url = raw.trim();
+  if (!url) return null;
+  if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+  try { new URL(url); } catch { return null; }
+
+  // YouTube
+  let yt = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  if (yt) return { type:'iframe', src:`https://www.youtube.com/embed/${yt[1]}?autoplay=1&rel=0`, label:'YouTube' };
+
+  // Vimeo
+  let vi = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  if (vi) return { type:'iframe', src:`https://player.vimeo.com/video/${vi[1]}?autoplay=1`, label:'Vimeo' };
+
+  // Twitch stream
+  let tw = url.match(/twitch\.tv\/([a-zA-Z0-9_]+)(?:\/video\/(\d+))?/);
+  if (tw) {
+    const src = tw[2]
+      ? `https://player.twitch.tv/?video=${tw[2]}&parent=${location.hostname||'localhost'}&autoplay=true`
+      : `https://player.twitch.tv/?channel=${tw[1]}&parent=${location.hostname||'localhost'}&autoplay=true`;
+    return { type:'iframe', src, label:'Twitch' };
+  }
+
+  // Dailymotion
+  let dm = url.match(/dailymotion\.com\/video\/([a-zA-Z0-9]+)/);
+  if (dm) return { type:'iframe', src:`https://www.dailymotion.com/embed/video/${dm[1]}?autoplay=1`, label:'Dailymotion' };
+
+  // Rumble
+  let ru = url.match(/rumble\.com\/embed\/([a-zA-Z0-9]+)/);
+  if (ru) return { type:'iframe', src:url, label:'Rumble' };
+
+  // PornHub
+  let ph = url.match(/pornhub\.com\/view_video\.php\?viewkey=([a-zA-Z0-9]+)/);
+  if (ph) return { type:'iframe', src:`https://www.pornhub.com/embed/${ph[1]}`, label:'PornHub' };
+
+  // XVideos
+  let xv = url.match(/xvideos\.com\/video(\d+)\//);
+  if (xv) return { type:'iframe', src:`https://www.xvideos.com/embedframe/${xv[1]}`, label:'XVideos' };
+
+  // XNXX
+  let xn = url.match(/xnxx\.com\/video-([a-zA-Z0-9]+)\//);
+  if (xn) return { type:'iframe', src:`https://www.xnxx.com/embedframe/${xn[1]}`, label:'XNXX' };
+
+  // RedTube
+  let rt = url.match(/redtube\.com\/(\d+)/);
+  if (rt) return { type:'iframe', src:`https://embed.redtube.com/?id=${rt[1]}&bgcolor=000000`, label:'RedTube' };
+
+  // Arquivo de vídeo direto
+  if (/\.(mp4|webm|ogg|ogv|mov|m4v)(\?.*)?$/i.test(url))
+    return { type:'video', src:url, label:'Vídeo Direto' };
+
+  // Fallback: tenta iframe genérico
+  return { type:'iframe', src:url, label:new URL(url).hostname.replace('www.','') };
+}
+
+function addPlayer() {
+  const raw = urlInput.value.trim();
+  if (!raw) { toast('cole um link primeiro'); return; }
+
+  const parsed = parseUrl(raw);
+  if (!parsed) { toast('link inválido'); return; }
+
+  windowCount++;
+  urlInput.value = '';
+
+  const offset = ((windowCount - 1) % 8) * 28;
+  const x = 20 + offset;
+  const y = 20 + offset;
+  const w = 560;
+  const h = 355;
+
+  const win = document.createElement('div');
+  win.className = 'fwindow focused';
+  win.style.cssText = `left:${x}px;top:${y}px;width:${w}px;height:${h}px;z-index:${++zTop}`;
+
+  win.innerHTML = `
+    <div class="fwindow-title" data-drag>
+      <div class="fwindow-icon"></div>
+      <div class="fwindow-label">${parsed.label}</div>
+      <div class="fwindow-btns">
+        <button class="fwindow-btn" title="Minimizar" onclick="toggleMin(this)">_</button>
+        <button class="fwindow-btn close" title="Fechar" onclick="closeWin(this)">✕</button>
+      </div>
+    </div>
+    <div class="fwindow-body">
+      <div class="fwindow-loading">
+        <div class="loader"></div>
+        <span>CARREGANDO...</span>
+      </div>
+      <div class="fwindow-error hidden">
+        <div class="err-title">ERRO AO CARREGAR</div>
+        <div class="err-hint">este site pode bloquear embed externo.<br>tente um link de embed direto.</div>
+      </div>
+      ${parsed.type === 'iframe'
+        ? `<iframe src="${parsed.src}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>`
+        : `<video src="${parsed.src}" controls autoplay></video>`
+      }
+    </div>
+    <div class="resize-handle"></div>
+  `;
+
+  workspace.appendChild(win);
+  updateCounter();
+
+  // iframe load / error detection
+  const body = win.querySelector('.fwindow-body');
+  const loading = win.querySelector('.fwindow-loading');
+  const errorDiv = win.querySelector('.fwindow-error');
+  const media = win.querySelector('iframe, video');
+
+  media.addEventListener('load', () => loading.classList.add('hidden'));
+  media.addEventListener('error', () => {
+    loading.classList.add('hidden');
+    errorDiv.classList.remove('hidden');
+    if(media.tagName === 'IFRAME') media.style.display='none';
+  });
+
+  // for video tag
+  if (parsed.type === 'video') {
+    media.addEventListener('canplay', () => loading.classList.add('hidden'));
+  }
+
+  // auto-hide loading after 10s fallback
+  setTimeout(() => loading.classList.add('hidden'), 10000);
+
+  makeDraggable(win);
+  makeResizable(win);
+  focusWin(win);
+  toast(`${parsed.label} aberto`);
+}
+
+function focusWin(win) {
+  document.querySelectorAll('.fwindow').forEach(w => w.classList.remove('focused'));
+  win.classList.add('focused');
+  win.style.zIndex = ++zTop;
+}
+
+function closeWin(btn) {
+  const win = btn.closest('.fwindow');
+  win.style.transition = 'opacity 0.15s,transform 0.15s';
+  win.style.opacity = '0';
+  win.style.transform = 'scale(0.95)';
+  setTimeout(() => { win.remove(); updateCounter(); }, 150);
+}
+
+function toggleMin(btn) {
+  const win = btn.closest('.fwindow');
+  const minimized = win.classList.toggle('minimized');
+  btn.textContent = minimized ? '▢' : '_';
+}
+
+function makeDraggable(win) {
+  const titlebar = win.querySelector('[data-drag]');
+  let ox, oy, dragging = false;
+
+  titlebar.addEventListener('mousedown', e => {
+    if (e.target.closest('.fwindow-btn')) return;
+    dragging = true;
+    ox = e.clientX - win.offsetLeft;
+    oy = e.clientY - win.offsetTop;
+    focusWin(win);
+    e.preventDefault();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const ws = workspace.getBoundingClientRect();
+    let nx = e.clientX - ox;
+    let ny = e.clientY - oy;
+    nx = Math.max(-win.offsetWidth + 80, Math.min(ws.width - 80, nx));
+    ny = Math.max(0, Math.min(ws.height - 34, ny));
+    win.style.left = nx + 'px';
+    win.style.top = ny + 'px';
+  });
+
+  document.addEventListener('mouseup', () => { dragging = false; });
+
+  // click to focus
+  win.addEventListener('mousedown', () => focusWin(win));
+}
+
+function makeResizable(win) {
+  const handle = win.querySelector('.resize-handle');
+  let resizing = false, startX, startY, startW, startH;
+
+  handle.addEventListener('mousedown', e => {
+    resizing = true;
+    startX = e.clientX; startY = e.clientY;
+    startW = win.offsetWidth; startH = win.offsetHeight;
+    e.preventDefault(); e.stopPropagation();
+  });
+
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    const nw = Math.max(280, startW + (e.clientX - startX));
+    const nh = Math.max(200, startH + (e.clientY - startY));
+    win.style.width = nw + 'px';
+    win.style.height = nh + 'px';
+  });
+
+  document.addEventListener('mouseup', () => { resizing = false; });
+}
+
+// keyboard shortcut: Enter no input
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const wins = document.querySelectorAll('.fwindow');
+    if (wins.length) {
+      const last = wins[wins.length - 1];
+      closeWin(last.querySelector('.fwindow-btn.close'));
+    }
+  }
+});
+</script>
+</body>
+</html>
