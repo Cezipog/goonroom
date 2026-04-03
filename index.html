@@ -314,6 +314,14 @@ function parseUrl(raw) {
 
   try { new URL(url); } catch { return null; }
 
+  // Twitter/X → fxtwitter
+  let xt = url.match(/(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]+)\/status\/(\d+)/);
+  if (xt) return { type:'iframe', src:`https://fxtwitter.com/${xt[1]}/status/${xt[2]}`, label:'Twitter/X' };
+
+  // fxtwitter/vxtwitter direto
+  let fx = url.match(/(?:fxtwitter\.com|vxtwitter\.com|fixvx\.com)\/([a-zA-Z0-9_]+)\/status\/(\d+)/);
+  if (fx) return { type:'iframe', src:url, label:'Twitter/X' };
+
   // YouTube
   let yt = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
   if (yt) return { type:'iframe', src:`https://www.youtube.com/embed/${yt[1]}?autoplay=1&rel=0`, label:'YouTube' };
