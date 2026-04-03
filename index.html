@@ -347,8 +347,8 @@ function parseUrl(raw) {
   let ph = url.match(/pornhub\.com\/view_video\.php\?viewkey=([a-zA-Z0-9]+)/);
   if (ph) return { type:'iframe', src:`https://www.pornhub.com/embed/${ph[1]}`, label:'PornHub' };
 
-  // XVideos - link normal
-  let xv = url.match(/xvideos\.com\/video([a-zA-Z0-9]+)[\/\-]/);
+  // XVideos - link normal (com ou sem ponto no ID: video123 ou video.abc123)
+  let xv = url.match(/xvideos\.com\/video\.?([a-zA-Z0-9]+)[\/\-]/);
   if (xv) return { type:'iframe', src:`https://www.xvideos.com/embedframe/${xv[1]}`, label:'XVideos' };
   // XVideos - embed direto colado
   let xve = url.match(/xvideos\.com\/embedframe\/([a-zA-Z0-9]+)/);
@@ -358,8 +358,8 @@ function parseUrl(raw) {
   let xn = url.match(/xnxx\.com\/video-([a-zA-Z0-9]+)\//);
   if (xn) return { type:'iframe', src:`https://www.xnxx.com/embedframe/${xn[1]}`, label:'XNXX' };
 
-  // RedTube
-  let rt = url.match(/redtube\.com\/(\d+)/);
+  // RedTube (cobre .com, .com.br e outros domínios regionais)
+  let rt = url.match(/redtube\.[a-z.]+\/(\d+)/);
   if (rt) return { type:'iframe', src:`https://embed.redtube.com/?id=${rt[1]}&bgcolor=000000`, label:'RedTube' };
 
   // Arquivo de vídeo direto
