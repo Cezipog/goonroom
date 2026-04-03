@@ -314,13 +314,9 @@ function parseUrl(raw) {
 
   try { new URL(url); } catch { return null; }
 
-  // Twitter/X → fxtwitter
+  // Twitter/X → widget oficial
   let xt = url.match(/(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]+)\/status\/(\d+)/);
-  if (xt) return { type:'iframe', src:`https://fxtwitter.com/${xt[1]}/status/${xt[2]}`, label:'Twitter/X' };
-
-  // fxtwitter/vxtwitter direto
-  let fx = url.match(/(?:fxtwitter\.com|vxtwitter\.com|fixvx\.com)\/([a-zA-Z0-9_]+)\/status\/(\d+)/);
-  if (fx) return { type:'iframe', src:url, label:'Twitter/X' };
+  if (xt) return { type:'twitter', tweetUrl:`https://x.com/${xt[1]}/status/${xt[2]}`, label:'Twitter/X' };
 
   // YouTube
   let yt = url.match(/(?:youtube\.com\/(?:watch\?v=|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
@@ -411,6 +407,8 @@ function addPlayer() {
       </div>
       ${parsed.type === 'iframe'
         ? `<iframe src="${parsed.src}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>`
+        : parsed.type === 'twitter'
+        ? `<div class="tweet-container" data-tweet-url="${parsed.tweetUrl}" style="overflow-y:auto;height:100%;background:#000;display:flex;align-items:flex-start;justify-content:center;padding:12px;"></div>`
         : `<video src="${parsed.src}" controls autoplay></video>`
       }
     </div>
@@ -419,6 +417,17 @@ function addPlayer() {
 
   workspace.appendChild(win);
   updateCounter();
+
+  // Twitter widget
+  if (parsed.type === 'twitter') {
+    const container = win.querySelector('.tweet-container');
+    loadTwitterWidget(container, parsed.tweetUrl, loading, errorDiv);
+    makeDraggable(win);
+    makeResizable(win);
+    focusWin(win);
+    toast(`${parsed.label} aberto`);
+    return;
+  }
 
   // iframe load / error detection
   const body = win.querySelector('.fwindow-body');
@@ -465,6 +474,46 @@ function toggleMin(btn) {
   const win = btn.closest('.fwindow');
   const minimized = win.classList.toggle('minimized');
   btn.textContent = minimized ? '▢' : '_';
+}
+
+function loadTwitterWidget(container, tweetUrl, loading, errorDiv) {
+  if (window.twttr && window.twttr.widgets) {
+    window.twttr.widgets.createTweet(
+      tweetUrl.match(/\/status\/(\d+)/)[1],
+      container,
+      { theme: 'dark', dnt: true }
+    ).then(el => {
+      loading.classList.add('hidden');
+      if (!el) { errorDiv.classList.remove('hidden'); }
+    }).catch(() => {
+      loading.classList.add('hidden');
+      errorDiv.classList.remove('hidden');
+    });
+  } else {
+    const script = document.createElement('script');
+    script.src = 'https://platform.twitter.com/widgets.js';
+    script.onload = () => {
+      window.twttr.ready(() => {
+        window.twttr.widgets.createTweet(
+          tweetUrl.match(/\/status\/(\d+)/)[1],
+          container,
+          { theme: 'dark', dnt: true }
+        ).then(el => {
+          loading.classList.add('hidden');
+          if (!el) { errorDiv.classList.remove('hidden'); }
+        }).catch(() => {
+          loading.classList.add('hidden');
+          errorDiv.classList.remove('hidden');
+        });
+      });
+    };
+    script.onerror = () => {
+      loading.classList.add('hidden');
+      errorDiv.classList.remove('hidden');
+    };
+    document.head.appendChild(script);
+  }
+  setTimeout(() => loading.classList.add('hidden'), 12000);
 }
 
 function makeDraggable(win) {
