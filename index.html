@@ -200,6 +200,17 @@ body{
   flex:1;position:relative;overflow:hidden;
   background:#000;
 }
+.fwindow-body iframe{scrollbar-width:none;-ms-overflow-style:none;}
+.fwindow-body iframe::-webkit-scrollbar{display:none;}
+.fwindow:not(:hover) .fwindow-body iframe{pointer-events:none;}
+
+.iframe-overlay{
+  position:absolute;inset:0;z-index:5;
+  background:transparent;
+  pointer-events:none;
+}
+.fwindow:not(:hover) .iframe-overlay{pointer-events:all;}
+.fwindow:hover .iframe-overlay{pointer-events:none;}
 .fwindow-body iframe,.fwindow-body video{
   width:100%;height:100%;
   border:none;display:block;
@@ -360,7 +371,7 @@ function parseUrl(raw) {
 
   // RedTube (cobre .com, .com.br e outros domínios regionais)
   let rt = url.match(/redtube\.[a-z.]+\/(\d+)/);
-  if (rt) return { type:'iframe', src:`https://embed.redtube.com/?id=${rt[1]}&bgcolor=000000`, label:'RedTube' };
+  if (rt) return { type:'iframe', src:`https://embed.redtube.com/?id=${rt[1]}&bgcolor=000000&autoplay=0`, label:'RedTube', noscroll:true };
 
   // Arquivo de vídeo direto
   if (/\.(mp4|webm|ogg|ogv|mov|m4v)(\?.*)?$/i.test(url))
@@ -409,7 +420,7 @@ function addPlayer() {
         <div class="err-hint">este site pode bloquear embed externo.<br>tente um link de embed direto.</div>
       </div>
       ${parsed.type === 'iframe'
-        ? `<iframe src="${parsed.src}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture"></iframe>`
+        ? `<div class="iframe-overlay"></div><iframe src="${parsed.src}" allowfullscreen allow="autoplay; encrypted-media; picture-in-picture" scrolling="no" style="width:100%;height:100%;border:none;display:block;"></iframe>`
         : parsed.type === 'twitter'
         ? `<div class="tweet-container" data-tweet-url="${parsed.tweetUrl}" style="overflow-y:auto;height:100%;background:#000;display:flex;align-items:flex-start;justify-content:center;padding:12px;"></div>`
         : `<video src="${parsed.src}" controls autoplay></video>`
